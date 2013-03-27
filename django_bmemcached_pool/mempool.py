@@ -158,8 +158,6 @@ class PoolBMemcached(BMemcached):
                 logging.warn('pool in not 0 %s', len(self.poolin))
             if len(self.poolout) >= self._pool_conn_max_size:
                 self.poollock.wait(self._pool_wait_timeout)
-#                self._findout()
-#                return
                 item = self._findconn()
                 if item:
                     self.poollocal.client = item
@@ -171,7 +169,6 @@ class PoolBMemcached(BMemcached):
             return self._newin()
         finally:
             try:
-                print 'active item %s %s' % (len(self.poolout), len(self.poolin))
                 self.poollock.release()
             except:pass
         
