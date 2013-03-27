@@ -11,7 +11,7 @@ import logging
 import traceback
 
 from django.conf import settings
-from django_bmemcached.memcached import BMemcached
+from django.core.cache.backends import memcached
 
 import bmemcached
 
@@ -79,7 +79,7 @@ class Client(bmemcached.Client):
 
         
 
-class PoolBMemcached(BMemcached):
+class PoolBMemcached(memcached.BaseMemcachedCache):
     """
     An implementation of a cache binding using python-binary-memcached
     A.K.A BMemcached and use pool.
@@ -87,10 +87,21 @@ class PoolBMemcached(BMemcached):
     def __init__(self, server, params):
         if not params.get('OPTIONS', None):
             params['OPTIONS'] = {}
+
+        params['OPTIONS']['username'] = params['OPTIONS'].get('username',
+            os.environ.get('MEMCACHE_USERNAME', None))
+
+        params['OPTIONS']['password'] = params['OPTIONS'].get('password',
+            os.environ.get('MEMCACHE_PASSWORD', None))
+
+        if not server:
+            server = tuple(os.environ.get('MEMCACHE_SERVERS', '').split(','))
         params['OPTIONS']['pool_conn_max_size'] = params['OPTIONS'].get('POOL_CONN_MAX_SIZE', 10)
         params['OPTIONS']['pool_conn_timeout'] = params['OPTIONS'].get('POOL_CONN_TIMEOUT', 600)
         params['OPTIONS']['pool_wait_timeout'] = params['OPTIONS'].get('POOL_WAIT_TIMEOUT', 30)    
-        super(PoolBMemcached, self).__init__(server, params)
+        super(PoolBMemcached, self).__init__(server, params,
+             library=bmemcached,
+             value_not_found_exception=ValueError)
         self._lib = sys.modules[__name__]
         self.poolin = collections.deque()
         self.poolout = weakref.WeakSet()
