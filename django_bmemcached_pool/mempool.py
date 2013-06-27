@@ -96,9 +96,12 @@ class PoolBMemcached(memcached.BaseMemcachedCache):
 
         if not server:
             server = tuple(os.environ.get('MEMCACHE_SERVERS', '').split(','))
-        params['OPTIONS']['pool_conn_max_size'] = params['OPTIONS'].get('POOL_CONN_MAX_SIZE', 10)
-        params['OPTIONS']['pool_conn_timeout'] = params['OPTIONS'].get('POOL_CONN_TIMEOUT', 600)
-        params['OPTIONS']['pool_wait_timeout'] = params['OPTIONS'].get('POOL_WAIT_TIMEOUT', 30)    
+        params['OPTIONS']['pool_conn_max_size'] = params['OPTIONS'].get('POOL_CONN_MAX_SIZE',
+            os.environ.get('MEMCACHE_POOL_CONN_MAX_SIZE', 10))
+        params['OPTIONS']['pool_conn_timeout'] = params['OPTIONS'].get('POOL_CONN_TIMEOUT',
+            os.environ.get('MEMCACHE_POOL_CONN_TIMEOUT', 600))
+        params['OPTIONS']['pool_wait_timeout'] = params['OPTIONS'].get('POOL_WAIT_TIMEOUT',
+            os.environ.get('MEMCACHE_POOL_WAIT_TIMEOUT', 30))    
         super(PoolBMemcached, self).__init__(server, params,
              library=bmemcached,
              value_not_found_exception=ValueError)
@@ -108,9 +111,9 @@ class PoolBMemcached(memcached.BaseMemcachedCache):
         self.poollocal = threading.local()
         self.poollocal.client = None
         self.poollock = threading.Condition()
-        self._pool_conn_max_size = self._options.get('pool_conn_max_size', 10)
-        self._pool_conn_timeout = self._options.get('pool_conn_timeout', 600)
-        self._pool_wait_timeout = self._options.get('pool_wait_timeout', 30)
+        self._pool_conn_max_size = int(self._options.get('pool_conn_max_size', 10))
+        self._pool_conn_timeout = int(self._options.get('pool_conn_timeout', 600))
+        self._pool_wait_timeout = int(self._options.get('pool_wait_timeout', 30))
 
     def _findconn(self):
         deadline = time.time() - self._pool_conn_timeout
